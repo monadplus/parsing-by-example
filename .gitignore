@@ -1,0 +1,35 @@
+# Haskell
+*.o
+*.hi
+*.chi
+*.chs.h
+*.dyn_o
+*.dyn_hi
+*.prof
+*.aux
+*.hp
+*.eventlog
+.virtualenv
+.hsenv
+.hpc
+.ghc.environment*
+
+# Cabal
+dist
+dist-*
+cabal-dev
+.cabal-sandbox/
+cabal.sandbox.config
+cabal.config
+cabal.project.local
+
+# Stack
+.stack-work/
+
+# Nix
+result
+
+# Others
+*~
+.DS_Store
+.hie
