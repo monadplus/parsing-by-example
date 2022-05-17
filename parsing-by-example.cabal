@@ -72,17 +72,17 @@ Library
                       containers     ^>=0.6,
                       text           ^>=1.2,
 
-Test-suite tasty
+Test-suite test
   import:               common-options
   type:                 exitcode-stdio-1.0
-  main-is:              Spec.hs
-  hs-source-dirs:       test
+  main-is:              Main.hs
+  hs-source-dirs:       tasty
 
   other-modules:
 
   build-depends:        parsing-by-example,
-                        hspec             >=2.7 && <2.10,
-                        hspec-core        >=2.7 && <2.10,
+                        tasty ^>=1.4,
+                        tasty-hunit ^>= 0.10,
 
 Test-suite doctest
   import:              common-options
