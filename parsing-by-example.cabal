@@ -72,7 +72,7 @@ Library
                       containers     ^>=0.6,
                       text           ^>=1.2,
 
-Test-suite test
+Test-suite tasty
   import:               common-options
   type:                 exitcode-stdio-1.0
   main-is:              Main.hs
@@ -83,6 +83,7 @@ Test-suite test
   build-depends:        parsing-by-example,
                         tasty ^>=1.4,
                         tasty-hunit ^>= 0.10,
+                        tasty-smallcheck ^>= 0.8,
 
 Test-suite doctest
   import:              common-options

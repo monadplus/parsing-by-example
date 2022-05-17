@@ -1,20 +1,10 @@
-# cradle:
-#     stack:
-#         - path: "./src"
-#           component: "parsing-by-example:lib"
-#         - path: "./app"
-#           component: "parsing-by-example:exe:parsing-by-example"
-#         - path: "./benchmark"
-#           component: "parsing-by-example:bench:parsing-by-example-bench"
-#         - path: "./test"
-#           component: "parsing-by-example:test:parsing-by-example-tests"
 cradle:
     cabal:
         - path: "./src"
           component: "lib:parsing-by-example"
         - path: "./app"
           component: "exe:parsing-by-example"
-        - path: "./benchmark"
-          component: "bench:parsing-by-example-bench"
-        - path: "./test"
-          component: "test:parsing-by-example-tests"
+        - path: "./tasty"
+          component: "test:tasty"
+        - path: "./doctest"
+          component: "test:doctest"
