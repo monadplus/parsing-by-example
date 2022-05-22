@@ -67,6 +67,7 @@ Library
   exposed-modules:     JSON
                      , JSON.Lexer
                      , JSON.Parsing
+                     , JSON.Type
 
   build-depends:      bytestring ^>=0.11,
                       containers ^>=0.6,
