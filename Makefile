@@ -1,6 +1,6 @@
 .PHONY : format
 
-HSFILES =  $(shell find . -type f -name \*.hs)
+HSFILES =  $(shell find . -type f -name \*.hs -not -path "./dist-newstyle/*")
 
 all: require build
 
