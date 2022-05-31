@@ -47,6 +47,8 @@ Common common-options
   if impl(ghc >= 9.2)
     ghc-options:       -Wredundant-bang-patterns
                        -Woperator-whitespace
+  if impl(ghc >= 9.4)
+    ghc-options:       -Wredundant-strictness-flags
 
 Executable parsing-by-example
   import:                common-options
@@ -65,13 +67,15 @@ Library
   hs-source-dirs:     src
 
   exposed-modules:     JSON
+                     , JSON.Class
+                     , JSON.Gen
                      , JSON.Lexer
                      , JSON.Parsing
-                     , JSON.Type
 
   build-depends:      bytestring ^>=0.11,
                       containers ^>=0.6,
                       Earley ^>= 0.13,
+                      hedgehog ^>= 1.1,
                       lens ^>= 5.1,
                       megaparsec ^>= 9.2,
                       mtl ^>= 2.2,
@@ -92,6 +96,7 @@ Test-suite tasty
   build-depends:        parsing-by-example,
                         tasty ^>=1.4,
                         tasty-hunit ^>= 0.10,
+                        tasty-hedgehog ^>= 1.2,
                         tasty-smallcheck ^>= 0.8,
 
 Test-suite doctest

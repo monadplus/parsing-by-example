@@ -32,12 +32,15 @@ import Prelude hiding (lex)
 
 type Parser = Megaparsec.Parsec Void Text
 
+{-# INLINEABLE space #-}
 space :: Parser ()
 space = Lexer.space Megaparsec.Char.space1 empty empty
 
+{-# INLINEABLE symbol #-}
 symbol :: Text -> Parser Text
 symbol = Lexer.symbol space
 
+{-# INLINEABLE lexeme #-}
 lexeme :: Parser a -> Parser a
 lexeme = Lexer.lexeme space
 
@@ -57,6 +60,7 @@ data Token
   deriving stock (Eq, Show)
 
 -- https://datatracker.ietf.org/doc/html/rfc7159#section-7
+{-# INLINEABLE string #-}
 string :: Parser Token
 string = lexeme $ do
   "\""
@@ -95,6 +99,7 @@ string = lexeme $ do
 
   return (StringLit (Text.concat texts))
 
+{-# INLINEABLE number #-}
 number :: Parser Token
 number = do
   scientific <- lexeme Lexer.scientific
@@ -102,6 +107,7 @@ number = do
     Just int -> return (IntLit int)
     Nothing -> return (RealLit scientific)
 
+{-# INLINEABLE parseToken #-}
 parseToken :: Parser Token
 parseToken =
   Combinators.choice
@@ -120,11 +126,13 @@ parseToken =
       number
     ]
 
+{-# INLINEABLE parseTokens #-}
 parseTokens :: Parser [Token]
 parseTokens = do
   space
   manyTill parseToken Megaparsec.eof
 
+{-# INLINEABLE lex #-}
 lex :: String -> Text -> Either (ParseError Text Void) [Token]
 lex sourceName inputText =
   case Megaparsec.parse parseTokens sourceName inputText of

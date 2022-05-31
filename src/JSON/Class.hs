@@ -3,7 +3,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module JSON.Type (JValue (..)) where
+module JSON.Class (JValue (..), showJSONString) where
 
 import qualified Data.Char as Char
 import qualified Data.List as List
@@ -19,13 +19,14 @@ data JValue
   | JString Text
   | JNumber {int :: Integer, frac :: [Int], exponent :: Integer}
   | JArray [JValue]
-  | JObject [(Text, JValue)]
+  | -- HashMap Text JValue
+    JObject [(Text, JValue)]
   deriving stock (Eq, Generic)
 
 instance Show JValue where
   show = \case
     JNull -> "null"
-    JBool True -> "tru"
+    JBool True -> "true"
     JBool False -> "false"
     JString text -> showJSONString text
     JNumber i [] 0 -> show i
