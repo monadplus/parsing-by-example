@@ -94,10 +94,11 @@ Test-suite tasty
   other-modules:
 
   build-depends:        parsing-by-example,
+                        hedgehog ^>= 1.1,
                         tasty ^>=1.4,
-                        tasty-hunit ^>= 0.10,
                         tasty-hedgehog ^>= 1.2,
-                        tasty-smallcheck ^>= 0.8,
+                        tasty-hunit ^>= 0.10,
+                        text ^>=1.2,
 
 Test-suite doctest
   import:              common-options

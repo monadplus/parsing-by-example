@@ -102,7 +102,7 @@ string = lexeme $ do
 {-# INLINEABLE number #-}
 number :: Parser Token
 number = do
-  scientific <- lexeme Lexer.scientific
+  scientific <- Lexer.signed space (lexeme Lexer.scientific)
   case Scientific.toBoundedInteger scientific of
     Just int -> return (IntLit int)
     Nothing -> return (RealLit scientific)
@@ -115,7 +115,8 @@ parseToken =
         [ FalseLit <$ symbol "false",
           TrueLit <$ symbol "true",
           NullLit <$ symbol "null"
-        ],
+        ]
+        <?> "literal",
       LeftBrace <$ symbol "{",
       RightBrace <$ symbol "}",
       LeftBracket <$ symbol "[",

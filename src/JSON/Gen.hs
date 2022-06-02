@@ -13,7 +13,9 @@ module JSON.Gen
   )
 where
 
-import Data.Int (Int64, Int8)
+import qualified Data.HashMap.Strict as HashMap
+import Data.Int (Int32, Int8)
+import Data.Scientific (scientific)
 import Data.Text (Text)
 import qualified Data.Text as Text
 import Hedgehog (Gen, Range)
@@ -28,13 +30,16 @@ jBoolGen :: Gen JValue
 jBoolGen = JBool <$> Gen.bool
 
 integerGen :: Gen Integer
-integerGen = Gen.integral (fromIntegral <$> Range.constantBounded @Int64)
+integerGen = Gen.integral (fromIntegral <$> Range.constantBounded @Int32)
 
-smallIntegerGen :: Gen Integer
-smallIntegerGen = Gen.integral (fromIntegral <$> Range.constantBounded @Int8)
+smallIntGen :: Gen Int
+smallIntGen = Gen.int (fromIntegral <$> Range.constantBounded @Int8)
 
 jNumberGen :: Gen JValue
-jNumberGen = JNumber <$> integerGen <*> Gen.list (Range.linear 0 10) (Gen.enum 0 9) <*> smallIntegerGen
+jNumberGen = JNumber <$> scientificGen
+  where
+    scientificGen = scientific <$> integerGen <*> exponentGen
+    exponentGen = Gen.frequency [(7, pure 0), (3, smallIntGen)]
 
 jsonStringGen :: Range Int -> Gen Text
 jsonStringGen listSize =
@@ -58,7 +63,7 @@ jArrayGen = JArray <$> Gen.list (Range.linear 0 10) jValueGen
 
 jObjectGen :: Gen JValue
 jObjectGen =
-  JObject <$> Gen.list (Range.linear 1 10) kvGen
+  JObject . HashMap.fromList <$> Gen.list (Range.linear 1 10) kvGen
   where
     kvGen = (,) <$> jsonStringGen (Range.constant 1 10) <*> jValueGen
 
@@ -92,10 +97,10 @@ stringify = pad . go
 
     go value = case value of
       JArray elements ->
-        mapM (pad . stringify) elements
+        traverse (pad . stringify) elements
           >>= fmap (surround "[" "]") . commaSeparated
       JObject kvs ->
-        mapM stringifyKV kvs >>= fmap (surround "{" "}") . commaSeparated
+        traverse stringifyKV (HashMap.toList kvs) >>= fmap (surround "{" "}") . commaSeparated
       _ -> return $ Text.pack (show value)
 
     stringifyKV (k, v) =
