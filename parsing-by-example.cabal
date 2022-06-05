@@ -70,7 +70,7 @@ Library
                      , JSON.Class
                      , JSON.Gen
                      , JSON.Lexer
-                     , JSON.Parsing
+                     , JSON.Parser
 
   build-depends:      bytestring ^>=0.11,
                       containers ^>=0.6,

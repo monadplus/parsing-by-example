@@ -5,6 +5,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeApplications #-}
 
+-- | This module contains the logic for tokenizing JSON
 module JSON.Lexer
   ( Token (..),
     lex,
@@ -23,7 +24,7 @@ import Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.Read as Read
 import Data.Void (Void)
-import Text.Megaparsec (ParseError, (<?>))
+import Text.Megaparsec ((<?>))
 import qualified Text.Megaparsec as Megaparsec
 import qualified Text.Megaparsec.Char as Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as Lexer
@@ -134,11 +135,11 @@ parseTokens = do
   manyTill parseToken Megaparsec.eof
 
 {-# INLINEABLE lex #-}
-lex :: String -> Text -> Either (ParseError Text Void) [Token]
+lex :: String -> Text -> Either String [Token]
 lex sourceName inputText =
   case Megaparsec.parse parseTokens sourceName inputText of
     Left ParseErrorBundle {..} -> do
       let bundleError :| _ = bundleErrors
-      Left bundleError
+      Left (Megaparsec.parseErrorPretty bundleError)
     Right tokens -> do
       return tokens
