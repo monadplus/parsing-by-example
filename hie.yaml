@@ -1,10 +1,13 @@
 cradle:
-    cabal:
-        - path: "./src"
-          component: "lib:parsing-by-example"
-        - path: "./app"
-          component: "exe:parsing-by-example"
-        - path: "./tasty"
-          component: "test:tasty"
-        - path: "./doctest"
-          component: "test:doctest"
+  cabal:
+    - path: "app/Main.hs"
+      component: "parsing-by-example:exe:parsing-by-example"
+
+    - path: "src"
+      component: "lib:parsing-by-example"
+
+    - path: "tasty"
+      component: "parsing-by-example:test:tasty"
+
+    - path: "doctest"
+      component: "parsing-by-example:test:doctest"
