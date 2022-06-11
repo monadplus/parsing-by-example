@@ -1,8 +1,20 @@
 module JSON
-  ( module JSON.Gen,
-    parse,
-    lex,
+  ( -- * Type
     JValue (..),
+
+    -- * Lexing
+    lex,
+
+    -- * Parsing
+    parse,
+
+    -- * Pretty
+    renderStrict,
+    renderIO,
+    ColumnWidth (..),
+
+    -- * Testing
+    module JSON.Gen,
   )
 where
 
@@ -10,4 +22,5 @@ import JSON.Class (JValue (..))
 import JSON.Gen
 import JSON.Lexer (lex)
 import JSON.Parser (parse)
+import JSON.Pretty (ColumnWidth (..), renderIO, renderStrict)
 import Prelude hiding (lex)

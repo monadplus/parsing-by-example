@@ -1,7 +1,7 @@
 cradle:
   cabal:
-    - path: "app/Main.hs"
-      component: "parsing-by-example:exe:parsing-by-example"
+    - path: "app/JSON/Main.hs"
+      component: "parsing-by-example:exe:json"
 
     - path: "src"
       component: "lib:parsing-by-example"

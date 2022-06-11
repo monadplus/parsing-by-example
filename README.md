@@ -11,7 +11,8 @@ Sources at [./src/JSON](./src/JSON).
 Running the example:
 
 ``` sh
-cabal run parsing-by-example -- -f examples/random.json
+cabal run json -- --file examples/random.json
+cabal run json -- --file examples/random.json --output random.json
 ```
 
 Running the property-based tests:
@@ -19,3 +20,5 @@ Running the property-based tests:
 ``` sh
 cabal run tasty
 ```
+
+![JSON example](./pictures/json_example.png)

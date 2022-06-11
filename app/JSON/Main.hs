@@ -5,8 +5,8 @@
 module Main where
 
 import Control.Applicative (optional)
-import qualified Data.Text as Text
 import qualified Data.Text.IO as Text.IO
+import JSON (ColumnWidth (..))
 import qualified JSON as JSON
 import Options.Applicative (Parser, ParserInfo)
 import qualified Options.Applicative as Options
@@ -54,6 +54,9 @@ throws (Left err) = do
   Exit.exitFailure
 throws (Right a) = pure a
 
+defaultColumnWidth :: ColumnWidth
+defaultColumnWidth = ColumnWidth 80
+
 main :: IO ()
 main = do
   options <- Options.execParser parserInfo
@@ -61,9 +64,9 @@ main = do
     Options {..} -> do
       text <- Text.IO.readFile input
       json <- throws (JSON.parse input text)
-      -- TODO use a pretty printer
-      let jsonPretty = Text.pack (show json)
       case output of
-        Nothing -> Text.IO.putStrLn jsonPretty
-        Just output' -> do
-          Text.IO.writeFile output' jsonPretty
+        Nothing ->
+          JSON.renderIO True IO.stdout defaultColumnWidth json
+        Just file -> do
+          IO.withFile file IO.WriteMode $ \handle ->
+            JSON.renderIO False handle defaultColumnWidth json
