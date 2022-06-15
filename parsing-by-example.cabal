@@ -49,6 +49,11 @@ Common common-options
   if impl(ghc >= 9.4)
     ghc-options:       -Wredundant-strictness-flags
 
+flag dev
+    description: Turn on development settings.
+    default:     False
+    manual:      True
+
 Executable json
   import:                common-options
   main-is:               Main.hs
@@ -58,10 +63,13 @@ Executable json
                          optparse-applicative ^>= 0.17,
                          text ^>=1.2,
 
-  ghc-options:           -O2
-                         -threaded
-                         -rtsopts
-                         -with-rtsopts=-N
+  if flag(dev)
+    ghc-options: -O0
+  else
+    ghc-options: -O2
+                 -threaded
+                 -rtsopts
+                 -with-rtsopts=-N
 
 Library
   import:             common-options
