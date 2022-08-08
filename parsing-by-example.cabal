@@ -75,6 +75,8 @@ Library
   import:             common-options
   hs-source-dirs:     src
 
+  default-extensions: StrictData
+
   exposed-modules:     JSON
                      , JSON.Class
                      , JSON.Gen

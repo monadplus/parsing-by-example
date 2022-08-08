@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module Main where
+module Main (main) where
 
 import Control.Applicative (optional)
 import qualified Data.Text.IO as Text.IO
