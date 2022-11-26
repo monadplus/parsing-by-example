@@ -10,7 +10,7 @@ Sources at [./src/JSON](./src/JSON).
 
 Running the example:
 
-``` sh
+```bash
 cabal run json -- --file examples/random.json
 cabal run json -- --file examples/random.json --output random.json
 ```
@@ -19,6 +19,13 @@ Running the property-based tests:
 
 ``` sh
 cabal run tasty
+```
+
+Running the doctests:
+
+```bash
+# Sometimes you need to add `tests: True` to `cabal.project.local`
+cabal run doctest
 ```
 
 ![JSON example](./pictures/json_example.png)
