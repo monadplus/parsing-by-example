@@ -62,14 +62,15 @@ Executable json
   build-depends:         parsing-by-example,
                          optparse-applicative ^>= 0.17,
                          text ^>=1.2,
+                         bytestring ^>=0.11,
 
   if flag(dev)
     ghc-options: -O0
   else
     ghc-options: -O2
-                 -threaded
-                 -rtsopts
-                 -with-rtsopts=-N
+                 -- -threaded
+                 -- -rtsopts
+                 -- -with-rtsopts=-N
 
 Library
   import:             common-options

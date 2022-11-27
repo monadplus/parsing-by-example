@@ -5,9 +5,11 @@
 module Main (main) where
 
 import Control.Applicative (optional)
-import qualified Data.Text.IO as Text.IO
+import qualified Data.ByteString as BS
+import qualified Data.Text.Encoding as Text
+import Data.Text.Encoding.Error (lenientDecode)
 import JSON (ColumnWidth (..))
-import qualified JSON as JSON
+import qualified JSON
 import Options.Applicative (Parser, ParserInfo)
 import qualified Options.Applicative as Options
 import qualified System.Exit as Exit
@@ -32,6 +34,13 @@ parser =
             <> Options.short 'f'
             <> Options.metavar "FILENAME"
             <> Options.help "Input file to parse"
+            <> Options.completer
+              ( Options.listCompleter
+                  [ "examples/large.json",
+                    "examples/oneline",
+                    "examples/random.json"
+                  ]
+              )
         )
 
     outputParser =
@@ -46,7 +55,7 @@ parserInfo :: ParserInfo Options
 parserInfo =
   Options.info
     (Options.helper <*> parser)
-    (Options.progDesc "Command-line utility for parsing-by-example")
+    (Options.progDesc "Command-line utility for prettifying json")
 
 throws :: Either String a -> IO a
 throws (Left err) = do
@@ -62,7 +71,7 @@ main = do
   options <- Options.execParser parserInfo
   case options of
     Options {..} -> do
-      text <- Text.IO.readFile input
+      text <- readFileUtf8 input
       json <- throws (JSON.parse input text)
       case output of
         Nothing ->
@@ -70,3 +79,5 @@ main = do
         Just file -> do
           IO.withFile file IO.WriteMode $ \handle ->
             JSON.renderIO False handle defaultColumnWidth json
+  where
+    readFileUtf8 = fmap (Text.decodeUtf8With lenientDecode) . BS.readFile
