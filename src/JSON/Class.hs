@@ -112,5 +112,5 @@ prettyJObject kvs =
     prettyLongKV (key, value) =
       Pretty.jsonKey (pretty $ showJSONString key)
         <+> ":"
-        <> Pretty.group (Pretty.flatAlt (Pretty.hardline <> "    ") " ")
-        <> pretty value
+          <> Pretty.group (Pretty.flatAlt (Pretty.hardline <> "    ") " ")
+          <> pretty value

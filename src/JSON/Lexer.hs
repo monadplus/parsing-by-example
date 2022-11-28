@@ -15,7 +15,6 @@ where
 import Control.Applicative (empty, (<|>))
 import Control.Monad.Combinators (many, manyTill)
 import qualified Control.Monad.Combinators as Combinators
-import Data.Char (isControl)
 import qualified Data.Char as Char
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import Data.Scientific (Scientific)
@@ -66,10 +65,15 @@ string :: Parser Token
 string = lexeme $ do
   "\""
 
+  let isText c =
+        ('\x20' <= c && c <= '\x21')
+          || ('\x23' <= c && c <= '\x5b')
+          || ('\x5d' <= c && c <= '\x10FFFF')
+
   let unescaped =
         Megaparsec.takeWhile1P
           (Just "text char")
-          (\c -> not (c == '\"' || c == '\\' || isControl c))
+          isText
 
   let unicodeEscape = do
         "\\u"
