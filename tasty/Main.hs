@@ -1,8 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Main where
+module Main (main) where
 
-import Control.Monad.IO.Class (liftIO)
 import Data.Functor (void)
 import qualified Data.Text as Text
 import Hedgehog (Gen, Property, forAll, property, (===))
@@ -13,7 +12,6 @@ import qualified JSON.Lexer as Lexer
 import qualified JSON.Parser as Parser
 import System.IO (hSetEncoding, stderr, stdout, utf8)
 import Test.Tasty
-import Test.Tasty.HUnit
 import Test.Tasty.Hedgehog (testPropertyNamed)
 
 main :: IO ()

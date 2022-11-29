@@ -80,7 +80,8 @@ Library
                      , JSON.Gen
                      , JSON.Lexer
                      , JSON.Parser
-                     , JSON.Pretty
+
+  other-modules: Pretty
 
   build-depends:      Earley ^>= 0.13,
                       hedgehog ^>= 1.1,
@@ -104,7 +105,7 @@ Test-suite tasty
                         hedgehog ^>= 1.1,
                         tasty ^>=1.4,
                         tasty-hedgehog ^>= 1.2,
-                        tasty-hunit ^>= 0.10,
+                        -- tasty-hunit ^>= 0.10,
                         text ^>=1.2,
 
 Test-suite doctest

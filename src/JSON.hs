@@ -22,5 +22,5 @@ import JSON.Class (JValue (..))
 import JSON.Gen
 import JSON.Lexer (lex)
 import JSON.Parser (parse)
-import JSON.Pretty (ColumnWidth (..), renderIO, renderStrict)
+import Pretty (ColumnWidth (..), renderIO, renderStrict)
 import Prelude hiding (lex)

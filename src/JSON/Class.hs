@@ -13,12 +13,12 @@ import Data.Scientific (Scientific)
 import Data.Text (Text)
 import qualified Data.Text as Text
 import GHC.Generics (Generic)
-import JSON.Pretty (Pretty (..))
-import qualified JSON.Pretty as Pretty
 import Numeric (showHex)
+import Pretty (Pretty (..))
 import Prettyprinter (Doc, (<+>))
-import qualified Prettyprinter as Pretty
-import Prettyprinter.Render.Terminal (AnsiStyle)
+import qualified Prettyprinter as PP
+import Prettyprinter.Render.Terminal (AnsiStyle, Color (..))
+import qualified Prettyprinter.Render.Terminal as PP.Terminal
 
 data JValue
   = JNull
@@ -42,7 +42,7 @@ instance Show JValue where
       showKeyValue (k, v) = showJSONString k ++ ": " ++ show v
 
 showJSONString :: Text -> String
-showJSONString s = "\"" ++ (Text.unpack $ Text.concatMap showJSONChar s) ++ "\""
+showJSONString s = "\"" ++ Text.unpack (Text.concatMap showJSONChar s) ++ "\""
 
 showJSONChar :: Char -> Text
 showJSONChar c = case c of
@@ -66,51 +66,64 @@ showJSONChar c = case c of
 
 instance Pretty JValue where
   pretty JNull =
-    Pretty.jsonLiteral "null"
+    jsonLiteral "null"
   pretty (JBool True) =
-    Pretty.jsonLiteral "true"
+    jsonLiteral "true"
   pretty (JBool False) =
-    Pretty.jsonLiteral "false"
+    jsonLiteral "false"
   pretty (JString text) =
-    Pretty.jsonString (pretty $ showJSONString text)
+    jsonString (pretty $ showJSONString text)
   pretty (JNumber scientific) =
-    Pretty.jsonNumber (pretty scientific)
+    jsonNumber (pretty scientific)
   pretty (JArray elements) =
     prettyJArray elements
   pretty (JObject hashmap) =
     prettyJObject (HashMap.toList hashmap)
 
+-- | JSON literals e.g. null, true, false
+jsonLiteral :: Doc AnsiStyle -> Doc AnsiStyle
+jsonLiteral = PP.annotate (PP.Terminal.colorDull Red)
+
+jsonKey :: Doc AnsiStyle -> Doc AnsiStyle
+jsonKey = PP.annotate (PP.Terminal.color Green)
+
+jsonString :: Doc AnsiStyle -> Doc AnsiStyle
+jsonString = PP.annotate (PP.Terminal.colorDull Yellow)
+
+jsonNumber :: Doc AnsiStyle -> Doc AnsiStyle
+jsonNumber = PP.annotate (PP.Terminal.colorDull Cyan)
+
 prettyJArray :: [JValue] -> Doc AnsiStyle
 prettyJArray [] = "[ ]"
 prettyJArray (element : elements) =
-  Pretty.align $ Pretty.flatAlt long short
+  PP.align $ PP.flatAlt long short
   where
     long =
       "[ "
         <> ( pretty element
-               <> foldMap (\e -> Pretty.hardline <> "," <+> pretty e) elements
+               <> foldMap (\e -> PP.hardline <> "," <+> pretty e) elements
            )
-        <> Pretty.hardline
+        <> PP.hardline
         <> "]"
     short =
-      Pretty.list (pretty <$> elements)
+      PP.list (pretty <$> elements)
 
 prettyJObject :: [(Text, JValue)] -> Doc AnsiStyle
 prettyJObject [] = "{ }"
 prettyJObject kvs =
-  Pretty.align $ Pretty.group (Pretty.flatAlt long short)
+  PP.align $ PP.group (PP.flatAlt long short)
   where
-    short = Pretty.encloseSep "{" "}" "," (prettyShortKV <$> kvs)
+    short = PP.encloseSep "{" "}" "," (prettyShortKV <$> kvs)
 
-    long = Pretty.encloseSep "{" "}" "," (prettyLongKV <$> kvs)
+    long = PP.encloseSep "{" "}" "," (prettyLongKV <$> kvs)
 
     prettyShortKV (key, value) =
-      Pretty.jsonKey (pretty $ showJSONString key)
+      jsonKey (pretty $ showJSONString key)
         <+> ":"
         <+> pretty value
 
     prettyLongKV (key, value) =
-      Pretty.jsonKey (pretty $ showJSONString key)
+      jsonKey (pretty $ showJSONString key)
         <+> ":"
-          <> Pretty.group (Pretty.flatAlt (Pretty.hardline <> "    ") " ")
+          <> PP.group (PP.flatAlt (PP.hardline <> "    ") " ")
           <> pretty value
