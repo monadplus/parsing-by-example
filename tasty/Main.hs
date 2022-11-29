@@ -1,9 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 
 module Main (main) where
 
+import Data.Function (on)
 import Data.Functor (void)
 import qualified Data.Text as Text
+import qualified Data.Time.Calendar.OrdinalDate as T
+import qualified Data.Time.LocalTime as T
 import Hedgehog (Gen, Property, forAll, property, (===))
 import qualified Hedgehog as Hedgehog
 import JSON.Class (JValue)
@@ -11,7 +15,9 @@ import qualified JSON.Gen as Gen
 import qualified JSON.Lexer as Lexer
 import qualified JSON.Parser as Parser
 import System.IO (hSetEncoding, stderr, stdout, utf8)
+import qualified TOML.Lexer as TOML
 import Test.Tasty
+import Test.Tasty.HUnit
 import Test.Tasty.Hedgehog (testPropertyNamed)
 
 main :: IO ()
@@ -32,7 +38,90 @@ unitTests :: TestTree
 unitTests =
   testGroup
     "Unit Tests"
-    []
+    [ parseZonedTimeTests,
+      parseLocalTimeTests,
+      parseTimeOfDayTests,
+      parseDayTests
+    ]
+  where
+    parseZonedTimeTests =
+      testGroup
+        "Parse ZonedTime"
+        [ testCase "Date 1" $ do
+            let date = "1979-05-27T07:32:00Z"
+                expected =
+                  T.ZonedTime
+                    (T.LocalTime (T.YearDay 1979 147) (T.TimeOfDay 7 32 0))
+                    (T.hoursToTimeZone 0)
+                Just result = TOML.parseZonedTime date
+            assertEqualZonedTime date expected result,
+          testCase "Date 2" $ do
+            let date = "1979-05-27T00:32:00-07:00"
+                expected =
+                  T.ZonedTime
+                    (T.LocalTime (T.YearDay 1979 147) (T.TimeOfDay 0 32 0))
+                    (T.hoursToTimeZone (-7))
+                Just result = TOML.parseZonedTime date
+            assertEqualZonedTime date expected result,
+          testCase "Date 3" $ do
+            let date = "1979-05-27T00:32:00.999999-07:00"
+                expected =
+                  T.ZonedTime
+                    (T.LocalTime (T.YearDay 1979 147) (T.TimeOfDay 0 32 00.999999))
+                    (T.hoursToTimeZone (-7))
+                Just result = TOML.parseZonedTime date
+            assertEqualZonedTime date expected result,
+          testCase "Date 4" $ do
+            let date = "1979-05-27 07:32:00Z"
+                expected =
+                  T.ZonedTime
+                    (T.LocalTime (T.YearDay 1979 147) (T.TimeOfDay 7 32 0))
+                    (T.hoursToTimeZone 0)
+                Just result = TOML.parseZonedTime date
+            assertEqualZonedTime date expected result
+        ]
+
+    parseLocalTimeTests =
+      testGroup
+        "Parse LocalTime"
+        [ testCase "Date 1" $ do
+            let date = "1979-05-27T07:32:00"
+                expected =
+                  Just $
+                    T.LocalTime (T.YearDay 1979 147) (T.TimeOfDay 7 32 0)
+            assertEqual date expected (TOML.parseLocalTime date),
+          testCase "Date 2" $ do
+            let date = "1979-05-27T00:32:00.999999"
+                expected =
+                  Just $
+                    T.LocalTime (T.YearDay 1979 147) (T.TimeOfDay 0 32 00.999999)
+            assertEqual date expected (TOML.parseLocalTime date)
+        ]
+
+    parseTimeOfDayTests =
+      testGroup
+        "Parse TimeOfDay"
+        [ testCase "Date 1" $ do
+            let date = "07:32:00"
+                expected = Just $ T.TimeOfDay 7 32 0
+            assertEqual date expected (TOML.parseTimeOfDay date),
+          testCase "Date 2" $ do
+            let date = "00:32:00.999999"
+                expected = Just $ T.TimeOfDay 0 32 00.999999
+            assertEqual date expected (TOML.parseTimeOfDay date)
+        ]
+
+    parseDayTests =
+      testGroup
+        "Parse Day"
+        [ testCase "Date 1" $ do
+            let date = "1979-05-27"
+                expected = Just $ T.YearDay 1979 147
+            assertEqual date expected (TOML.parseDay date)
+        ]
+
+assertEqualZonedTime :: String -> T.ZonedTime -> T.ZonedTime -> Assertion
+assertEqualZonedTime date = assertEqual date `on` T.zonedTimeToUTC
 
 propTests :: TestTree
 propTests =

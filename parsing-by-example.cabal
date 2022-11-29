@@ -80,6 +80,11 @@ Library
                      , JSON.Gen
                      , JSON.Lexer
                      , JSON.Parser
+                     
+                     , TOML
+                     , TOML.Class
+                     , TOML.Lexer
+                     , TOML.Parser
 
   other-modules: Pretty
 
@@ -91,6 +96,7 @@ Library
                       prettyprinter-ansi-terminal ^>= 1.1,
                       scientific ^>= 0.3,
                       text ^>=1.2,
+                      time ^>= 1.12,
                       unordered-containers ^>= 0.2,
 
 Test-suite tasty
@@ -105,12 +111,14 @@ Test-suite tasty
                         hedgehog ^>= 1.1,
                         tasty ^>=1.4,
                         tasty-hedgehog ^>= 1.2,
-                        -- tasty-hunit ^>= 0.10,
+                        tasty-hunit ^>= 0.10,
                         text ^>=1.2,
+                        time ^>= 1.12,
 
-Test-suite doctest
-  import:              common-options
-  type:                exitcode-stdio-1.0
-  hs-source-dirs:      doctest
-  main-is:             Main.hs
-  build-depends:       doctest  >=0.20 && <0.21
+-- FIXME: https://github.com/sol/doctest/issues/327
+-- Test-suite doctest
+--   import:              common-options
+--   type:                exitcode-stdio-1.0
+--   hs-source-dirs:      doctest
+--   main-is:             Main.hs
+--   build-depends:       doctest  >=0.20 && <0.21
