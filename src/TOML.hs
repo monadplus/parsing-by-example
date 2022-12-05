@@ -1,8 +1,7 @@
 module TOML
   ( -- * Type
-    TValue (..),
+    Value (..),
   )
 where
 
-import TOML.Class (TValue (..))
-import Prelude hiding (lex)
+import TOML.Class (Value (..))

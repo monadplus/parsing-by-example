@@ -83,7 +83,6 @@ Library
                      
                      , TOML
                      , TOML.Class
-                     , TOML.Lexer
                      , TOML.Parser
 
   other-modules: Pretty
@@ -104,11 +103,15 @@ Test-suite tasty
   type:                 exitcode-stdio-1.0
   main-is:              Main.hs
   hs-source-dirs:       tasty
+  other-modules:        Test.JSON,
 
-  other-modules:
+                        Test.TOML,
+                          Test.TOML.Common,
+                          Test.TOML.Date,
 
   build-depends:        parsing-by-example,
                         hedgehog ^>= 1.1,
+                        megaparsec ^>= 9.2,
                         tasty ^>=1.4,
                         tasty-hedgehog ^>= 1.2,
                         tasty-hunit ^>= 0.10,
