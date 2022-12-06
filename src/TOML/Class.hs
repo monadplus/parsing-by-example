@@ -14,7 +14,7 @@ import qualified Data.Time as Time
 
 data Value
   = Bool Bool
-  | Integer Int
+  | Integer Integer
   | Double Scientific
   | Text Text
   | ZonedTime ZonedTime

@@ -2,35 +2,35 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeApplications #-}
 
 module TOML.Parser
   ( dateTimeP,
+    integerP,
   )
 where
 
 import Control.Applicative
-import Control.Monad.Combinators (choice, count)
+import qualified Control.Monad.Combinators as Combinators
 import qualified Data.Char as Char
 import Data.Fixed
-import qualified Data.Scientific as Scientific
 import Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.Read as Read
 import qualified Data.Time as Time
 import Data.Void (Void)
 import TOML.Class (Value (..))
-import Text.Megaparsec (takeWhile1P, try, (<?>))
+import Text.Megaparsec ((<?>))
 import qualified Text.Megaparsec as Megaparsec
-import Text.Megaparsec.Char (digitChar, hexDigitChar, space1)
+import qualified Text.Megaparsec.Char as Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as Lexer
-import Prelude hiding (lex)
 
 type Parser = Megaparsec.Parsec Void Text
 
 space :: Parser ()
 space =
   Lexer.space
-    space1
+    Megaparsec.Char.space1
     (Lexer.skipLineComment "#")
     empty
 
@@ -45,17 +45,17 @@ dateTimeP = lexeme (parseTime <|> parseDateTime) <?> "time literal"
   where
     -- TimeOfDay
     parseTime :: Parser Value
-    parseTime = TimeOfDay <$> try parseTimeOfDay
+    parseTime = TimeOfDay <$> Megaparsec.try parseTimeOfDay
 
     -- ZonedTime, LocalTime, Day
     parseDateTime :: Parser Value
     parseDateTime = do
       day <- parseDay
-      mTimeOfDay <- optional $ try (("T" <|> " ") *> parseTimeOfDay)
+      mTimeOfDay <- Combinators.optional $ Megaparsec.try (("T" <|> " ") *> parseTimeOfDay)
       case mTimeOfDay of
         Nothing -> pure $ Day day
         Just timeOfDay -> do
-          mTimeZone <- optional parseTimeZone
+          mTimeZone <- Combinators.optional parseTimeZone
           let localTime = Time.LocalTime day timeOfDay
           pure $ case mTimeZone of
             Nothing -> LocalTime localTime
@@ -65,7 +65,7 @@ dateTimeP = lexeme (parseTime <|> parseDateTime) <?> "time literal"
     parseTimeZone = Time.minutesToTimeZone <$> ((0 <$ "Z") <|> offset) <?> "time zone offset"
       where
         offset = do
-          sign <- ("+" <|> "-") <?> "sign (+ or -)"
+          sign <- ("+" <|> "-") <?> "sign"
           hh <- int2DigitsP
           _ <- ":"
           mm <- int2DigitsP
@@ -99,19 +99,20 @@ dateTimeP = lexeme (parseTime <|> parseDateTime) <?> "time literal"
             "Invalid day: " <> show year <> "-" <> show month <> "-" <> show day
 
     parseYear :: Parser Integer
-    parseYear = read <$> count 4 digitChar
+    parseYear = read <$> Combinators.count 4 Megaparsec.Char.digitChar
 
     int2DigitsP :: Parser Int
-    int2DigitsP = read <$> count 2 digitChar
+    int2DigitsP = read <$> Combinators.count 2 Megaparsec.Char.digitChar
 
     picoP :: Parser Pico
     picoP = do
-      int <- count 2 digitChar
-      frac <- optional $ "." *> (take 12 <$> some digitChar)
+      int <- Combinators.count 2 Megaparsec.Char.digitChar
+      frac <- optional $ "." *> (take 12 <$> Combinators.some Megaparsec.Char.digitChar)
       pure $ read $ case frac of
         Nothing -> int
         Just frac' -> int ++ "." ++ frac'
 
+-- TODO: review
 stringP :: Parser Value
 stringP = lexeme $ do
   "\""
@@ -122,13 +123,13 @@ stringP = lexeme $ do
           || ('\x5d' <= c && c <= '\x10FFFF')
 
   let unescaped =
-        takeWhile1P
+        Megaparsec.takeWhile1P
           (Just "text char")
           isText
 
   let unicodeEscape = do
         "\\u"
-        codepoint <- count 4 hexDigitChar
+        codepoint <- Combinators.count 4 Megaparsec.Char.hexDigitChar
         case Read.hexadecimal (Text.pack codepoint) of
           Right (n, "") -> do
             return (Text.singleton (Char.chr n))
@@ -136,7 +137,7 @@ stringP = lexeme $ do
             fail "invalid unicode"
 
   let escaped =
-        choice
+        Combinators.choice
           [ "\"" <$ "\\\"",
             "\\" <$ "\\\\",
             "/" <$ "\\/",
@@ -155,13 +156,53 @@ stringP = lexeme $ do
 
   return (Text (Text.concat texts))
 
--- TODO: separator _
-number :: Parser Value
-number = do
-  scientific <- Lexer.signed space (lexeme Lexer.scientific)
-  case Scientific.toBoundedInteger scientific of
-    Just int -> return (Integer int)
-    Nothing -> return (Double scientific)
+integerP :: Parser Integer
+integerP =
+  lexeme
+    ( Combinators.choice
+        [ Megaparsec.try "0b" *> binaryP <?> "binary",
+          Megaparsec.try "0x" *> hexadecimalP <?> "hexadecimal",
+          Megaparsec.try "0o" *> octalP <?> "octal",
+          decimalP <?> "decimal"
+        ]
+    )
+    <?> "integer"
+  where
+    numberP :: Parser Integer -> Parser Char -> Parser Integer
+    numberP parseNumber parseDigit =
+      failOnNothing . string2Number =<< digitsP
+      where
+        digitsP :: Parser Text
+        digitsP = Text.pack . mconcat <$> Combinators.sepBy1 (Combinators.some parseDigit) "_"
+
+        string2Number :: Text -> Maybe Integer
+        string2Number = Megaparsec.parseMaybe @Void parseNumber
+
+        failOnNothing :: Maybe Integer -> Parser Integer
+        failOnNothing = maybe (fail "Invalid binary number") pure
+
+    binaryP :: Parser Integer
+    binaryP = numberP Lexer.binary Megaparsec.Char.binDigitChar
+
+    hexadecimalP :: Parser Integer
+    hexadecimalP = numberP Lexer.hexadecimal Megaparsec.Char.hexDigitChar
+
+    octalP :: Parser Integer
+    octalP = numberP Lexer.octal Megaparsec.Char.octDigitChar
+
+    decimalP :: Parser Integer
+    decimalP = do
+      leadingZero <- Megaparsec.observing (Megaparsec.try leadingZeroP)
+      case leadingZero of
+        Left _ -> Lexer.signed space (lexeme decP)
+        Right _ -> fail "Leading zeros are not allowed"
+      where
+        decP :: Parser Integer
+        decP = numberP Lexer.decimal Megaparsec.Char.digitChar
+
+        signP = Combinators.optional (Megaparsec.Char.char '+' <|> Megaparsec.Char.char '-')
+
+        leadingZeroP = signP >> Megaparsec.Char.char '0' >> Combinators.some Megaparsec.Char.digitChar
 
 -- parseToken :: Parser Token
 -- parseToken =
