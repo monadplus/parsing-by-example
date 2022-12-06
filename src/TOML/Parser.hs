@@ -1,12 +1,13 @@
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeApplications #-}
 
 module TOML.Parser
   ( dateTimeP,
     integerP,
+    floatP,
+    stringP,
   )
 where
 
@@ -39,6 +40,10 @@ symbol = Lexer.symbol space
 
 lexeme :: Parser a -> Parser a
 lexeme = Lexer.lexeme space
+
+-- TODO:
+boolP :: Parser Bool
+boolP = undefined
 
 dateTimeP :: Parser Value
 dateTimeP = lexeme (parseTime <|> parseDateTime) <?> "time literal"
@@ -113,7 +118,7 @@ dateTimeP = lexeme (parseTime <|> parseDateTime) <?> "time literal"
         Just frac' -> int ++ "." ++ frac'
 
 -- TODO: review
-stringP :: Parser Value
+stringP :: Parser Text
 stringP = lexeme $ do
   "\""
 
@@ -154,7 +159,41 @@ stringP = lexeme $ do
 
   "\""
 
-  return (Text (Text.concat texts))
+  return $ Text.concat texts
+
+floatP :: Parser Double
+floatP =
+  lexeme $
+    Lexer.signed
+      space
+      ( Combinators.choice
+          [ infP <?> "inf",
+            nanP <?> "nan",
+            doubleP <?> "float"
+          ]
+      )
+  where
+    infP, nanP, doubleP :: Parser Double
+    infP = 1 / 0 <$ symbol "inf"
+    nanP = 0 / 0 <$ symbol "nan"
+    doubleP =
+      maybe (fail "Invalid float") pure
+        . Megaparsec.parseMaybe @Void Lexer.float
+        =<< mconcat [digitsP, fracP <|> expP]
+      where
+        digitsP :: Parser Text
+        digitsP = Text.pack . concat <$> Combinators.sepBy1 (Combinators.some Megaparsec.Char.digitChar) (Megaparsec.Char.char '_')
+
+        fracP :: Parser Text
+        fracP = mconcat [".", digitsP, Combinators.option "" expP]
+
+        expP :: Parser Text
+        expP =
+          mconcat
+            [ "e" <|> "E",
+              Combinators.option "+" ("+" <|> "-"),
+              digitsP
+            ]
 
 integerP :: Parser Integer
 integerP =
@@ -178,7 +217,7 @@ integerP =
         string2Number :: Text -> Maybe Integer
         string2Number = Megaparsec.parseMaybe @Void parseNumber
 
-        failOnNothing :: Maybe Integer -> Parser Integer
+        failOnNothing :: Maybe a -> Parser a
         failOnNothing = maybe (fail "Invalid binary number") pure
 
     binaryP :: Parser Integer
@@ -194,7 +233,7 @@ integerP =
     decimalP = do
       leadingZero <- Megaparsec.observing (Megaparsec.try leadingZeroP)
       case leadingZero of
-        Left _ -> Lexer.signed space (lexeme decP)
+        Left _ -> Lexer.signed space decP
         Right _ -> fail "Leading zeros are not allowed"
       where
         decP :: Parser Integer
@@ -204,18 +243,20 @@ integerP =
 
         leadingZeroP = signP >> Megaparsec.Char.char '0' >> Combinators.some Megaparsec.Char.digitChar
 
--- parseToken :: Parser Token
--- parseToken =
---   choice
---     [ string,
---       TimeLit <$> parseTimeLit, -- Try before number
---       number
---     ]
+-- Tip: parse the first value, the rest should use the same parser
+arrayP :: Parser [Value]
+arrayP = undefined
 
--- parseToml :: Parser [Token]
--- parseToml = do
---   space
---   manyTill parseToken eof
+valueP :: Parser Value
+valueP = undefined
+
+-- TODO: 
+-- tomlToken:
+--  - Parse table name
+--  - Parse table array name
+--  - Parse key value
+--     - KeyValue should parse key = inline table/inline array table/value
+-- Once you have the toml tokens, you should type check it and transform it to a TOML object (~ hashmap)
 
 -- {-# INLINEABLE parse #-}
 -- parse :: String -> Text -> Either String [Token]

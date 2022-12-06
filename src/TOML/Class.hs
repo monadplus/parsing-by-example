@@ -1,13 +1,10 @@
 {-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE EmptyDataDeriving #-}
-{-# LANGUAGE OverloadedStrings #-}
 
 module TOML.Class
   ( Value (..),
   )
 where
 
-import Data.Scientific (Scientific)
 import Data.Text (Text)
 import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime)
 import qualified Data.Time as Time
@@ -15,8 +12,8 @@ import qualified Data.Time as Time
 data Value
   = Bool Bool
   | Integer Integer
-  | Double Scientific
-  | Text Text
+  | Float Double
+  | String Text
   | ZonedTime ZonedTime
   | LocalTime LocalTime
   | Day Day
@@ -27,8 +24,10 @@ data Value
 instance Eq Value where
   (Bool b1) == (Bool b2) = b1 == b2
   (Integer i1) == (Integer i2) = i1 == i2
-  (Double f1) == (Double f2) = f1 == f2
-  (Text s1) == (Text s2) = s1 == s2
+  (Float f1) == (Float f2)
+    | isNaN f1 && isNaN f2 = True
+    | otherwise = f1 == f2
+  (String s1) == (String s2) = s1 == s2
   (ZonedTime a) == (ZonedTime b) =
     Time.zonedTimeToUTC a == Time.zonedTimeToUTC b
   (LocalTime a) == (LocalTime b) = a == b

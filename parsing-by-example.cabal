@@ -109,6 +109,7 @@ Test-suite tasty
                           Test.TOML.Common,
                           Test.TOML.Date,
                           Test.TOML.Integer,
+                          Test.TOML.Float,
 
   build-depends:        parsing-by-example,
                         hedgehog ^>= 1.1,
