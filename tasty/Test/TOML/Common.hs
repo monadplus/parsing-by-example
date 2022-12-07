@@ -10,12 +10,18 @@ module Test.TOML.Common
     shouldFailParsingFloat,
     shouldParseBool,
     shouldFailParsingBool,
+    shouldParseString,
+    shouldFailParsingString,
     day1,
     timeOfDay1,
     timeOfDay2,
     timeOfDay3,
     offset1,
     offset2,
+    quote,
+    tripleQuote,
+    dQuote,
+    tripleDQuote,
   )
 where
 
@@ -36,21 +42,25 @@ shouldParseDate s expected = Megaparsec.parse TOML.Parser.dateTimeP "" s `should
 shouldParseInteger :: Text -> Integer -> Assertion
 shouldParseInteger s expected = Megaparsec.parse TOML.Parser.integerP "" s `shouldParse` expected
 
-shouldFailParsingInteger :: Text -> Assertion
-shouldFailParsingInteger s = Megaparsec.parse TOML.Parser.integerP "" `shouldFailOn` s
-
 shouldParseFloat :: Text -> Double -> Assertion
 shouldParseFloat s expected = do
   let d = Megaparsec.parse TOML.Parser.floatP "" s
   fmap DoubleNaN d `shouldParse` DoubleNaN expected
 
-shouldFailParsingFloat :: Text -> Assertion
-shouldFailParsingFloat s = Megaparsec.parse TOML.Parser.floatP "" `shouldFailOn` s
-
 shouldParseBool :: Text -> Bool -> Assertion
 shouldParseBool s expected = Megaparsec.parse TOML.Parser.boolP "" s `shouldParse` expected
 
-shouldFailParsingBool :: Text -> Assertion
+shouldParseString :: Text -> Text -> Assertion
+shouldParseString s expected = Megaparsec.parse TOML.Parser.stringP "" s `shouldParse` expected
+
+shouldFailParsingInteger,
+  shouldFailParsingFloat,
+  shouldFailParsingBool,
+  shouldFailParsingString ::
+    Text -> Assertion
+shouldFailParsingString s = Megaparsec.parse (TOML.Parser.stringP *> Megaparsec.eof) "" `shouldFailOn` s
+shouldFailParsingInteger s = Megaparsec.parse TOML.Parser.integerP "" `shouldFailOn` s
+shouldFailParsingFloat s = Megaparsec.parse TOML.Parser.floatP "" `shouldFailOn` s
 shouldFailParsingBool s = Megaparsec.parse TOML.Parser.boolP "" `shouldFailOn` s
 
 shouldParse ::
@@ -99,3 +109,15 @@ instance Eq DoubleNaN where
   DoubleNaN f1 == DoubleNaN f2
     | isNaN f1 && isNaN f2 = True
     | otherwise = f1 == f2
+
+quote :: Text -> Text
+quote s = "'" <> s <> "'"
+
+tripleQuote :: Text -> Text
+tripleQuote s = "'''" <> s <> "'''"
+
+dQuote :: Text -> Text
+dQuote s = "\"" <> s <> "\""
+
+tripleDQuote :: Text -> Text
+tripleDQuote s = "\"\"\"" <> s <> "\"\"\""

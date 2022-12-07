@@ -21,7 +21,7 @@ tests =
 zonedTimeTests :: TestTree
 zonedTimeTests =
   testGroup
-    "Parse ZonedTime"
+    "ZonedTime"
     [ testCase "Parse 1979-05-27T07:32:00Z" $ do
         let expected = ZonedTime $ T.ZonedTime (T.LocalTime day1 timeOfDay1) offset1
         shouldParseDate "1979-05-27T07:32:00Z" expected,
@@ -39,7 +39,7 @@ zonedTimeTests =
 localTimeTests :: TestTree
 localTimeTests =
   testGroup
-    "Parse LocalTime"
+    "LocalTime"
     [ testCase "Parse 1979-05-27T07:32:00" $ do
         let expected = LocalTime $ T.LocalTime day1 timeOfDay1
         shouldParseDate "1979-05-27T07:32:00" expected,
@@ -51,7 +51,7 @@ localTimeTests =
 timeOfDayTests :: TestTree
 timeOfDayTests =
   testGroup
-    "Parse TimeOfDay"
+    "TimeOfDay"
     [ testCase "Parse 07:32:00" $ do
         let expected = TimeOfDay timeOfDay1
         shouldParseDate "07:32:00" expected,
@@ -63,7 +63,7 @@ timeOfDayTests =
 dayTests :: TestTree
 dayTests =
   testGroup
-    "Parse Day"
+    "Day"
     [ testCase "Parse 1979-05-27" $ do
         let expected = Day day1
         shouldParseDate "1979-05-27" expected

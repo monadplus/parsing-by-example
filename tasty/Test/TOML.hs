@@ -6,14 +6,23 @@ import qualified Test.TOML.Bool as Bool
 import qualified Test.TOML.Date as Date
 import qualified Test.TOML.Float as Float
 import qualified Test.TOML.Integer as Integer
+import qualified Test.TOML.String as String
 import Test.Tasty
 
 tests :: TestTree
 tests =
   testGroup
     "TOML"
+    [ parsingTests
+    ]
+
+parsingTests :: TestTree
+parsingTests =
+  testGroup
+    "Parsing"
     [ Bool.tests,
       Date.tests,
       Float.tests,
-      Integer.tests
+      Integer.tests,
+      String.tests
     ]

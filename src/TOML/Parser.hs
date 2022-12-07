@@ -2,6 +2,9 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
+{-# HLINT ignore "Redundant lambda" #-}
 
 module TOML.Parser
   ( boolP,
@@ -16,6 +19,7 @@ import Control.Applicative
 import qualified Control.Monad.Combinators as Combinators
 import qualified Data.Char as Char
 import Data.Fixed
+import Data.Functor (($>))
 import Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.Read as Read
@@ -122,49 +126,92 @@ dateTimeP = lexeme (parseTime <|> parseDateTime) <?> "time literal"
         Nothing -> int
         Just frac' -> int ++ "." ++ frac'
 
--- TODO: review
 stringP :: Parser Text
-stringP = lexeme $ do
-  "\""
+stringP =
+  Combinators.choice
+    [ multiLineBasicStringP <?> "multi-line basic string",
+      basicStringP <?> "basic string",
+      multiLineLiteralStringP <?> "multi-line literal string",
+      literalStringP <?> "literal string"
+    ]
+    <?> "string"
 
-  let isText c =
-        ('\x20' <= c && c <= '\x21')
-          || ('\x23' <= c && c <= '\x5b')
-          || ('\x5d' <= c && c <= '\x10FFFF')
+-- Includes whitespaces but not newlines
+nonControlCharP :: Parser Text
+nonControlCharP =
+  Text.singleton <$> (Megaparsec.satisfy (not . Char.isControl) <?> "non-control char")
 
-  let unescaped =
-        Megaparsec.takeWhile1P
-          (Just "text char")
-          isText
-
-  let unicodeEscape = do
-        "\\u"
-        codepoint <- Combinators.count 4 Megaparsec.Char.hexDigitChar
-        case Read.hexadecimal (Text.pack codepoint) of
-          Right (n, "") -> do
-            return (Text.singleton (Char.chr n))
-          _ -> do
-            fail "invalid unicode"
-
-  let escaped =
-        Combinators.choice
-          [ "\"" <$ "\\\"",
-            "\\" <$ "\\\\",
-            "/" <$ "\\/",
-            "\b" <$ "\\b",
-            "\f" <$ "\\f",
-            "\n" <$ "\\n",
-            "\r" <$ "\\r",
-            "\t" <$ "\\t",
-            unicodeEscape
+escapedP :: Parser Text
+escapedP = Text.singleton <$> escapedP'
+  where
+    escapedP' :: Parser Char
+    escapedP' =
+      Megaparsec.Char.char '\\'
+        *> Combinators.choice
+          [ Megaparsec.Char.char '"',
+            Megaparsec.Char.char '\\',
+            Megaparsec.Char.char '/',
+            Megaparsec.Char.char 'b' $> '\b',
+            Megaparsec.Char.char 'f' $> '\f',
+            Megaparsec.Char.char 'n' $> '\n',
+            Megaparsec.Char.char 'r' $> '\r',
+            Megaparsec.Char.char 't' $> '\t',
+            Megaparsec.Char.char 'u' *> unicodeP 4,
+            Megaparsec.Char.char 'U' *> unicodeP 8
           ]
-          <?> "escape sequence"
+        <?> "escape sequence"
+    unicodeP :: Int -> Parser Char
+    unicodeP = \digits -> do
+      codepoint <- Combinators.count digits Megaparsec.Char.hexDigitChar
+      case Read.hexadecimal (Text.pack codepoint) of
+        Right (n, "") -> do
+          return $ Char.chr n
+        _ -> do
+          fail "invalid unicode"
 
-  texts <- many (unescaped <|> escaped)
+basicStringP :: Parser Text
+basicStringP = lexeme $ mconcat <$> (dQuoteP *> Combinators.manyTill charP dQuoteP)
+  where
+    dQuoteP = Megaparsec.Char.char '"'
 
-  "\""
+    charP = escapedP <|> nonControlCharP
 
-  return $ Text.concat texts
+literalStringP :: Parser Text
+literalStringP = lexeme $ Text.pack <$> (quote *> Combinators.manyTill charP quote)
+  where
+    quote = Megaparsec.Char.char '\''
+    charP = Megaparsec.satisfy (\c -> c /= '\n' && c /= '\r')
+
+-- FIXME:
+-- There's a subtle bug that happens when the closing delimiter is prefixed with
+-- another closing delimiter component e.g. """Foo"""" should be parsed as 'Foo"' but
+-- is actually parsed as 'Foo'.
+multiLineStringP :: Parser Text -> Parser Text -> Parser Text
+multiLineStringP delimiterP charP =
+  lexeme $
+    mconcat
+      <$> ( delimiterP
+              *> Combinators.optional Megaparsec.Char.eol
+              *> Combinators.manyTill charP delimiterP
+          )
+
+multiLineBasicStringP :: Parser Text
+multiLineBasicStringP = multiLineStringP delimiterP charP
+  where
+    delimiterP = symbol "\"\"\""
+
+    backslashEndP = Megaparsec.try (Megaparsec.Char.char '\\' *> Megaparsec.Char.eol *> Megaparsec.Char.space) $> Text.empty
+
+    charP = backslashEndP <|> escapedP <|> nonControlCharP <|> Megaparsec.Char.eol
+
+multiLineLiteralStringP :: Parser Text
+multiLineLiteralStringP = multiLineStringP delimiterP charP
+  where
+    delimiterP = symbol "'''"
+
+    tab = Text.singleton <$> Megaparsec.Char.tab
+
+    charP = nonControlCharP <|> Megaparsec.Char.eol <|> tab
 
 floatP :: Parser Double
 floatP =
