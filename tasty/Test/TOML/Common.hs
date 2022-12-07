@@ -8,6 +8,8 @@ module Test.TOML.Common
     shouldFailParsingInteger,
     shouldParseFloat,
     shouldFailParsingFloat,
+    shouldParseBool,
+    shouldFailParsingBool,
     day1,
     timeOfDay1,
     timeOfDay2,
@@ -44,6 +46,12 @@ shouldParseFloat s expected = do
 
 shouldFailParsingFloat :: Text -> Assertion
 shouldFailParsingFloat s = Megaparsec.parse TOML.Parser.floatP "" `shouldFailOn` s
+
+shouldParseBool :: Text -> Bool -> Assertion
+shouldParseBool s expected = Megaparsec.parse TOML.Parser.boolP "" s `shouldParse` expected
+
+shouldFailParsingBool :: Text -> Assertion
+shouldFailParsingBool s = Megaparsec.parse TOML.Parser.boolP "" `shouldFailOn` s
 
 shouldParse ::
   ( ShowErrorComponent e,

@@ -107,6 +107,7 @@ Test-suite tasty
 
                         Test.TOML,
                           Test.TOML.Common,
+                          Test.TOML.Bool,
                           Test.TOML.Date,
                           Test.TOML.Integer,
                           Test.TOML.Float,

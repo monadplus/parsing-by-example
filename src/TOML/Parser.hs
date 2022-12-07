@@ -4,9 +4,10 @@
 {-# LANGUAGE TypeApplications #-}
 
 module TOML.Parser
-  ( dateTimeP,
-    integerP,
+  ( boolP,
+    dateTimeP,
     floatP,
+    integerP,
     stringP,
   )
 where
@@ -41,9 +42,13 @@ symbol = Lexer.symbol space
 lexeme :: Parser a -> Parser a
 lexeme = Lexer.lexeme space
 
--- TODO:
 boolP :: Parser Bool
-boolP = undefined
+boolP =
+  lexeme $
+    Combinators.choice
+      [ True <$ symbol "true",
+        False <$ symbol "false"
+      ]
 
 dateTimeP :: Parser Value
 dateTimeP = lexeme (parseTime <|> parseDateTime) <?> "time literal"
@@ -250,7 +255,7 @@ arrayP = undefined
 valueP :: Parser Value
 valueP = undefined
 
--- TODO: 
+-- TODO:
 -- tomlToken:
 --  - Parse table name
 --  - Parse table array name
