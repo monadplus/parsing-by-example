@@ -2,6 +2,7 @@
 
 module Test.TOML (tests) where
 
+import qualified Test.TOML.Array as Array
 import qualified Test.TOML.Bool as Bool
 import qualified Test.TOML.Date as Date
 import qualified Test.TOML.Float as Float
@@ -20,7 +21,8 @@ parsingTests :: TestTree
 parsingTests =
   testGroup
     "Parsing"
-    [ Bool.tests,
+    [ Array.tests,
+      Bool.tests,
       Date.tests,
       Float.tests,
       Integer.tests,

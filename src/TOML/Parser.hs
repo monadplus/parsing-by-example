@@ -7,11 +7,13 @@
 {-# HLINT ignore "Redundant lambda" #-}
 
 module TOML.Parser
-  ( boolP,
+  ( arrayP,
+    boolP,
     dateTimeP,
     floatP,
     integerP,
     stringP,
+    valueP,
   )
 where
 
@@ -46,13 +48,16 @@ symbol = Lexer.symbol space
 lexeme :: Parser a -> Parser a
 lexeme = Lexer.lexeme space
 
-boolP :: Parser Bool
+boolP :: Parser Value
 boolP =
-  lexeme $
-    Combinators.choice
-      [ True <$ symbol "true",
-        False <$ symbol "false"
-      ]
+  Bool
+    <$> lexeme
+      ( Combinators.choice
+          [ True <$ symbol "true",
+            False <$ symbol "false"
+          ]
+      )
+    <?> "boolean"
 
 dateTimeP :: Parser Value
 dateTimeP = lexeme (parseTime <|> parseDateTime) <?> "time literal"
@@ -126,14 +131,15 @@ dateTimeP = lexeme (parseTime <|> parseDateTime) <?> "time literal"
         Nothing -> int
         Just frac' -> int ++ "." ++ frac'
 
-stringP :: Parser Text
+stringP :: Parser Value
 stringP =
-  Combinators.choice
-    [ multiLineBasicStringP <?> "multi-line basic string",
-      basicStringP <?> "basic string",
-      multiLineLiteralStringP <?> "multi-line literal string",
-      literalStringP <?> "literal string"
-    ]
+  String
+    <$> Combinators.choice
+      [ multiLineBasicStringP <?> "multi-line basic string",
+        basicStringP <?> "basic string",
+        multiLineLiteralStringP <?> "multi-line literal string",
+        literalStringP <?> "literal string"
+      ]
     <?> "string"
 
 -- Includes whitespaces but not newlines
@@ -213,16 +219,18 @@ multiLineLiteralStringP = multiLineStringP delimiterP charP
 
     charP = nonControlCharP <|> Megaparsec.Char.eol <|> tab
 
-floatP :: Parser Double
+floatP :: Parser Value
 floatP =
-  lexeme $
-    Lexer.signed
-      space
-      ( Combinators.choice
-          [ infP <?> "inf",
-            nanP <?> "nan",
-            doubleP <?> "float"
-          ]
+  Float
+    <$> lexeme
+      ( Lexer.signed
+          space
+          ( Combinators.choice
+              [ infP <?> "inf",
+                nanP <?> "nan",
+                doubleP <?> "float"
+              ]
+          )
       )
   where
     infP, nanP, doubleP :: Parser Double
@@ -247,16 +255,17 @@ floatP =
               digitsP
             ]
 
-integerP :: Parser Integer
+integerP :: Parser Value
 integerP =
-  lexeme
-    ( Combinators.choice
-        [ Megaparsec.try "0b" *> binaryP <?> "binary",
-          Megaparsec.try "0x" *> hexadecimalP <?> "hexadecimal",
-          Megaparsec.try "0o" *> octalP <?> "octal",
-          decimalP <?> "decimal"
-        ]
-    )
+  Integer
+    <$> lexeme
+      ( Combinators.choice
+          [ Megaparsec.try "0b" *> binaryP <?> "binary",
+            Megaparsec.try "0x" *> hexadecimalP <?> "hexadecimal",
+            Megaparsec.try "0o" *> octalP <?> "octal",
+            decimalP <?> "decimal"
+          ]
+      )
     <?> "integer"
   where
     numberP :: Parser Integer -> Parser Char -> Parser Integer
@@ -295,27 +304,31 @@ integerP =
 
         leadingZeroP = signP >> Megaparsec.Char.char '0' >> Combinators.some Megaparsec.Char.digitChar
 
--- Tip: parse the first value, the rest should use the same parser
-arrayP :: Parser [Value]
-arrayP = undefined
+arrayP :: Parser Value
+arrayP =
+  Array
+    <$> lexeme
+      ( Combinators.between ("[" *> space) "]" $
+          Combinators.sepEndBy valueP (symbol "," *> space)
+      )
 
 valueP :: Parser Value
-valueP = undefined
+valueP =
+  Combinators.choice
+    [ Megaparsec.try arrayP,
+      Megaparsec.try boolP,
+      Megaparsec.try stringP,
+      Megaparsec.try dateTimeP,
+      Megaparsec.try floatP,
+      Megaparsec.try integerP
+    ]
 
--- TODO:
--- tomlToken:
---  - Parse table name
---  - Parse table array name
---  - Parse key value
---     - KeyValue should parse key = inline table/inline array table/value
--- Once you have the toml tokens, you should type check it and transform it to a TOML object (~ hashmap)
-
--- {-# INLINEABLE parse #-}
--- parse :: String -> Text -> Either String [Token]
--- parse sourceName inputText =
---   case Megaparsec.parse parseTokens sourceName inputText of
---     Left ParseErrorBundle {..} -> do
---       let bundleError :| _ = bundleErrors
---       Left (Megaparsec.parseErrorPretty bundleError)
---     Right tokens -> do
---       return tokens
+{- TODO:
+\* Parse
+\* Parse key
+\* Parse pair
+\* Parse table name
+\* Parse table
+\* Parse inline table
+\* Parse table array
+-}

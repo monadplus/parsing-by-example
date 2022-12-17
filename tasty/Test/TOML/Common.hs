@@ -1,27 +1,38 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 
 module Test.TOML.Common
   ( shouldParseDate,
     shouldParseInteger,
     shouldFailParsingInteger,
     shouldParseFloat,
+    shouldParseArray,
     shouldFailParsingFloat,
     shouldParseBool,
     shouldFailParsingBool,
     shouldParseString,
     shouldFailParsingString,
+    shouldFailParsingArray,
     day1,
     timeOfDay1,
     timeOfDay2,
     timeOfDay3,
     offset1,
     offset2,
+    zonedTime1,
+    localTime1,
     quote,
     tripleQuote,
     dQuote,
     tripleDQuote,
+    int1,
+    int2,
+    int3,
+    float1,
+    float2,
+    float3,
   )
 where
 
@@ -40,28 +51,33 @@ shouldParseDate :: Text -> Value -> Assertion
 shouldParseDate s expected = Megaparsec.parse TOML.Parser.dateTimeP "" s `shouldParse` expected
 
 shouldParseInteger :: Text -> Integer -> Assertion
-shouldParseInteger s expected = Megaparsec.parse TOML.Parser.integerP "" s `shouldParse` expected
+shouldParseInteger s expected = Megaparsec.parse TOML.Parser.integerP "" s `shouldParse` (Integer expected)
 
 shouldParseFloat :: Text -> Double -> Assertion
 shouldParseFloat s expected = do
-  let d = Megaparsec.parse TOML.Parser.floatP "" s
+  let d = (\(Float x) -> x) <$> Megaparsec.parse TOML.Parser.floatP "" s
   fmap DoubleNaN d `shouldParse` DoubleNaN expected
 
 shouldParseBool :: Text -> Bool -> Assertion
-shouldParseBool s expected = Megaparsec.parse TOML.Parser.boolP "" s `shouldParse` expected
+shouldParseBool s expected = Megaparsec.parse TOML.Parser.boolP "" s `shouldParse` (Bool expected)
 
 shouldParseString :: Text -> Text -> Assertion
-shouldParseString s expected = Megaparsec.parse TOML.Parser.stringP "" s `shouldParse` expected
+shouldParseString s expected = Megaparsec.parse TOML.Parser.stringP "" s `shouldParse` (String expected)
+
+shouldParseArray :: Text -> [Value] -> Assertion
+shouldParseArray s expected = Megaparsec.parse TOML.Parser.arrayP "" s `shouldParse` (Array expected)
 
 shouldFailParsingInteger,
   shouldFailParsingFloat,
   shouldFailParsingBool,
-  shouldFailParsingString ::
+  shouldFailParsingString,
+  shouldFailParsingArray ::
     Text -> Assertion
 shouldFailParsingString s = Megaparsec.parse (TOML.Parser.stringP *> Megaparsec.eof) "" `shouldFailOn` s
 shouldFailParsingInteger s = Megaparsec.parse TOML.Parser.integerP "" `shouldFailOn` s
 shouldFailParsingFloat s = Megaparsec.parse TOML.Parser.floatP "" `shouldFailOn` s
 shouldFailParsingBool s = Megaparsec.parse TOML.Parser.boolP "" `shouldFailOn` s
+shouldFailParsingArray s = Megaparsec.parse TOML.Parser.arrayP "" `shouldFailOn` s
 
 shouldParse ::
   ( ShowErrorComponent e,
@@ -90,6 +106,16 @@ p `shouldFailOn` s =
       assertFailure $
         "the parser is expected to fail, but it parsed: " ++ show v
 
+int1, int2, int3 :: Value
+int1 = Integer 1
+int2 = Integer 2
+int3 = Integer 3
+
+float1, float2, float3 :: Value
+float1 = Float 1.0
+float2 = Float 2.0
+float3 = Float 3.0
+
 day1 :: T.Day
 day1 = T.YearDay 1979 147
 
@@ -101,6 +127,12 @@ timeOfDay3 = T.TimeOfDay 0 32 00.999999
 offset1, offset2 :: T.TimeZone
 offset1 = T.hoursToTimeZone 0
 offset2 = T.hoursToTimeZone (-7)
+
+zonedTime1 :: Value
+zonedTime1 = ZonedTime $ T.ZonedTime (T.LocalTime day1 timeOfDay1) offset1
+
+localTime1 :: Value
+localTime1 = LocalTime $ T.LocalTime day1 timeOfDay1
 
 newtype DoubleNaN = DoubleNaN Double
   deriving newtype (Show)

@@ -106,11 +106,12 @@ Test-suite tasty
   other-modules:        Test.JSON,
 
                         Test.TOML,
-                          Test.TOML.Common,
+                          Test.TOML.Array,
                           Test.TOML.Bool,
+                          Test.TOML.Common,
                           Test.TOML.Date,
-                          Test.TOML.Integer,
                           Test.TOML.Float,
+                          Test.TOML.Integer,
                           Test.TOML.String,
 
   build-depends:        parsing-by-example,
