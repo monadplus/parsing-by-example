@@ -114,6 +114,7 @@ Test-suite tasty
                           Test.TOML.Integer,
                           Test.TOML.Key,
                           Test.TOML.String,
+                          Test.TOML.Toml,
 
   build-depends:        parsing-by-example,
                         hedgehog ^>= 1.1,

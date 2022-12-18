@@ -5,9 +5,11 @@
 
 module TOML.Class
   ( Value (..),
+    IValue (..),
     KeyComponent (..),
     Key (..),
-    TomlNode (..),
+    Table (..),
+    TomlAst (..),
     TOML (..),
   )
 where
@@ -22,10 +24,12 @@ import Data.Time (Day, LocalTime, TimeOfDay, ZonedTime)
 import qualified Data.Time as Time
 
 newtype KeyComponent = KeyComponent {unKeyComponent :: Text}
-  deriving newtype (Show, Eq, Ord, IsString)
+  deriving stock (Show)
+  deriving newtype (Eq, Ord, IsString)
 
 newtype Key = Key {unKey :: NonEmpty KeyComponent}
-  deriving newtype (Show, Eq, Ord)
+  deriving stock (Show)
+  deriving newtype (Eq, Ord)
 
 instance IsString Key where
   fromString "" = Key ("" :| [])
@@ -61,12 +65,25 @@ instance Eq Value where
   (Array a1) == (Array a2) = a1 == a2
   _ == _ = False
 
--- TODO: TableHeader, TableHeaderArray, InlineTable, InlineTableArray
--- Should be validated and transformed into TOML docs
-data TomlNode
-  = KeyValue Key Value
+-- | Allowed values inside inline tables.
+data IValue
+  = IValue Value
+  | ITable Table
+  deriving stock (Show, Eq)
+
+newtype Table = Table {unTable :: [(Key, IValue)]}
+  deriving stock (Show)
+  deriving newtype (Eq)
+
+data TomlAst
+  = TableHeader Key
+  | TableHeaderArray Key
+  | KeyValue Key Value
+  | InlineTable Key Table
+  | InlineTableArray Key (NonEmpty Table)
   deriving stock (Show, Eq)
 
 data TOML = TOML
   { tomlPairs :: HashMap Key Value
   }
+  deriving stock (Show, Eq)

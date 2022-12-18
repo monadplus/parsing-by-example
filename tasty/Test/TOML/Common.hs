@@ -11,6 +11,7 @@ module Test.TOML.Common
     shouldParseArray,
     shouldParseKey,
     shouldFailParsingFloat,
+    shouldFailParsingToml,
     shouldParseBool,
     shouldFailParsingBool,
     shouldParseString,
@@ -21,6 +22,7 @@ module Test.TOML.Common
     shouldFailParsingTableHeaderArray,
     shouldParseTableHeader,
     shouldParseTableHeaderArray,
+    shouldParseToml,
     day1,
     timeOfDay1,
     timeOfDay2,
@@ -39,13 +41,16 @@ module Test.TOML.Common
     float1,
     float2,
     float3,
+    istring,
+    iinteger,
+    ifloat,
   )
 where
 
 import Data.Text (Text)
 import qualified Data.Time.Calendar.OrdinalDate as T
 import qualified Data.Time.LocalTime as T
-import TOML.Class (Key (..), Value (..))
+import TOML.Class (IValue (..), Key (..), TomlAst, Value (..))
 import qualified TOML.Parser
 import Test.Tasty.HUnit
 import Text.Megaparsec (TraversableStream)
@@ -82,6 +87,9 @@ shouldParseTableHeader s expected = Megaparsec.parse TOML.Parser.tableHeaderP ""
 shouldParseTableHeaderArray :: Text -> Key -> Assertion
 shouldParseTableHeaderArray s expected = Megaparsec.parse TOML.Parser.tableHeaderArrayP "" s `shouldParse` expected
 
+shouldParseToml :: Text -> [TomlAst] -> Assertion
+shouldParseToml s expected = Megaparsec.parse TOML.Parser.tomlP "" s `shouldParse` expected
+
 shouldFailParsingInteger,
   shouldFailParsingFloat,
   shouldFailParsingBool,
@@ -89,7 +97,8 @@ shouldFailParsingInteger,
   shouldFailParsingArray,
   shouldFailParsingKey,
   shouldFailParsingTableHeader,
-  shouldFailParsingTableHeaderArray ::
+  shouldFailParsingTableHeaderArray,
+  shouldFailParsingToml ::
     Text -> Assertion
 shouldFailParsingString s = Megaparsec.parse (TOML.Parser.stringP *> Megaparsec.eof) "" `shouldFailOn` s
 shouldFailParsingInteger s = Megaparsec.parse (TOML.Parser.integerP *> Megaparsec.eof) "" `shouldFailOn` s
@@ -99,6 +108,7 @@ shouldFailParsingArray s = Megaparsec.parse (TOML.Parser.arrayP *> Megaparsec.eo
 shouldFailParsingKey s = Megaparsec.parse (TOML.Parser.keyP *> Megaparsec.eof) "" `shouldFailOn` s
 shouldFailParsingTableHeader s = Megaparsec.parse (TOML.Parser.tableHeaderP *> Megaparsec.eof) "" `shouldFailOn` s
 shouldFailParsingTableHeaderArray s = Megaparsec.parse (TOML.Parser.tableHeaderArrayP *> Megaparsec.eof) "" `shouldFailOn` s
+shouldFailParsingToml s = Megaparsec.parse (TOML.Parser.tomlP *> Megaparsec.eof) "" `shouldFailOn` s
 
 shouldParse ::
   ( ShowErrorComponent e,
@@ -174,3 +184,12 @@ dQuote s = "\"" <> s <> "\""
 
 tripleDQuote :: Text -> Text
 tripleDQuote s = "\"\"\"" <> s <> "\"\"\""
+
+istring :: Text -> IValue
+istring = IValue . String
+
+iinteger :: Integer -> IValue
+iinteger = IValue . Integer
+
+ifloat :: Double -> IValue
+ifloat = IValue . Float

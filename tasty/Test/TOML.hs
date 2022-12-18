@@ -9,6 +9,7 @@ import qualified Test.TOML.Float as Float
 import qualified Test.TOML.Integer as Integer
 import qualified Test.TOML.Key as Key
 import qualified Test.TOML.String as String
+import qualified Test.TOML.Toml as Toml
 import Test.Tasty
 
 tests :: TestTree
@@ -28,5 +29,6 @@ parsingTests =
       Float.tests,
       Integer.tests,
       Key.tests,
-      String.tests
+      String.tests,
+      Toml.tests
     ]

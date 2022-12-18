@@ -17,6 +17,8 @@ module TOML.Parser
     tableHeaderP,
     tableHeaderArrayP,
     keyValueP,
+    tomlAstP,
+    tomlP,
   )
 where
 
@@ -26,12 +28,13 @@ import qualified Control.Monad.Combinators.NonEmpty as Combinators.NonEmpty
 import qualified Data.Char as Char
 import Data.Fixed
 import Data.Functor (($>))
+import Data.List.NonEmpty (NonEmpty)
 import Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.Read as Read
 import qualified Data.Time as Time
 import Data.Void (Void)
-import TOML.Class (Key (..), KeyComponent (..), TomlNode (..), Value (..))
+import TOML.Class (IValue (..), Key (..), KeyComponent (..), Table (..), TomlAst (..), Value (..))
 import Text.Megaparsec ((<?>))
 import qualified Text.Megaparsec as Megaparsec
 import qualified Text.Megaparsec.Char as Megaparsec.Char
@@ -335,18 +338,49 @@ keyP = Key <$> Combinators.NonEmpty.sepBy1 keyComponentP (Megaparsec.Char.char '
     keyComponentP = KeyComponent <$> (bareKeyP <|> basicStringP <|> literalStringP)
 
 tableHeaderP :: Parser Key
-tableHeaderP = Combinators.between (symbol "[") (symbol "]") keyP
+tableHeaderP = lexeme $ Combinators.between (symbol "[") (symbol "]") keyP
 
 tableHeaderArrayP :: Parser Key
-tableHeaderArrayP = Combinators.between (symbol "[[") (symbol "]]") keyP
+tableHeaderArrayP = lexeme $ Combinators.between (symbol "[[") (symbol "]]") keyP
 
-keyValueP :: Parser TomlNode
+inlineTableP :: Parser Table
+inlineTableP =
+  Table
+    <$> Combinators.between
+      (symbol "{")
+      (symbol "}")
+      (Combinators.sepBy pairP (symbol ","))
+  where
+    inlineValueP :: Parser IValue
+    inlineValueP = (IValue <$> valueP) <|> (ITable <$> inlineTableP)
+
+    pairP :: Parser (Key, IValue)
+    pairP = liftA2 (,) (keyP <* symbol "=") inlineValueP
+
+inlineTableArrayP :: Parser (NonEmpty Table)
+inlineTableArrayP =
+  Combinators.between
+    (symbol "[")
+    (symbol "]")
+    (Combinators.NonEmpty.sepBy1 inlineTableP (symbol ","))
+
+-- FIXME: A newline following the key will be accepted when it should fail.
+keyValueP :: Parser TomlAst
 keyValueP = do
-  key <- keyP <* symbol "="
-  KeyValue key <$> valueP
+  key <- keyP <* (Megaparsec.Char.char '=' *> Megaparsec.Char.hspace)
+  Combinators.choice
+    [ InlineTable key <$> inlineTableP <?> "inline table",
+      InlineTableArray key <$> Megaparsec.try inlineTableArrayP <?> "inline array of tables",
+      KeyValue key <$> valueP <?> "key-value pair"
+    ]
 
-{- TODO:
-\* Parse table
-\* Parse inline table
-\* Parse table array
--}
+tomlAstP :: Parser TomlAst
+tomlAstP =
+  Combinators.choice
+    [ TableHeader <$> Megaparsec.try tableHeaderP <?> "table header",
+      TableHeaderArray <$> Megaparsec.try tableHeaderArrayP <?> "table array header",
+      keyValueP
+    ]
+
+tomlP :: Parser [TomlAst]
+tomlP = space *> Combinators.many tomlAstP <* Megaparsec.eof
