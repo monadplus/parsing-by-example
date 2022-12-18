@@ -1,10 +1,9 @@
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE DerivingStrategies #-}
+{-# HLINT ignore "Redundant lambda" #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-
-{-# HLINT ignore "Redundant lambda" #-}
 
 module TOML.Parser
   ( arrayP,
@@ -14,11 +13,16 @@ module TOML.Parser
     integerP,
     stringP,
     valueP,
+    keyP,
+    tableHeaderP,
+    tableHeaderArrayP,
+    keyValueP,
   )
 where
 
 import Control.Applicative
 import qualified Control.Monad.Combinators as Combinators
+import qualified Control.Monad.Combinators.NonEmpty as Combinators.NonEmpty
 import qualified Data.Char as Char
 import Data.Fixed
 import Data.Functor (($>))
@@ -27,7 +31,7 @@ import qualified Data.Text as Text
 import qualified Data.Text.Read as Read
 import qualified Data.Time as Time
 import Data.Void (Void)
-import TOML.Class (Value (..))
+import TOML.Class (Key (..), KeyComponent (..), TomlNode (..), Value (..))
 import Text.Megaparsec ((<?>))
 import qualified Text.Megaparsec as Megaparsec
 import qualified Text.Megaparsec.Char as Megaparsec.Char
@@ -323,11 +327,25 @@ valueP =
       Megaparsec.try integerP
     ]
 
+keyP :: Parser Key
+keyP = Key <$> Combinators.NonEmpty.sepBy1 keyComponentP (Megaparsec.Char.char '.' *> space) <?> "key"
+  where
+    bareKeyP = lexeme $ Megaparsec.takeWhile1P Nothing (\c -> Char.isAlphaNum c || c == '-' || c == '_')
+
+    keyComponentP = KeyComponent <$> (bareKeyP <|> basicStringP <|> literalStringP)
+
+tableHeaderP :: Parser Key
+tableHeaderP = Combinators.between (symbol "[") (symbol "]") keyP
+
+tableHeaderArrayP :: Parser Key
+tableHeaderArrayP = Combinators.between (symbol "[[") (symbol "]]") keyP
+
+keyValueP :: Parser TomlNode
+keyValueP = do
+  key <- keyP <* symbol "="
+  KeyValue key <$> valueP
+
 {- TODO:
-\* Parse
-\* Parse key
-\* Parse pair
-\* Parse table name
 \* Parse table
 \* Parse inline table
 \* Parse table array

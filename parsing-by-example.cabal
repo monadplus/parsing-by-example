@@ -112,6 +112,7 @@ Test-suite tasty
                           Test.TOML.Date,
                           Test.TOML.Float,
                           Test.TOML.Integer,
+                          Test.TOML.Key,
                           Test.TOML.String,
 
   build-depends:        parsing-by-example,

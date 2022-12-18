@@ -9,12 +9,18 @@ module Test.TOML.Common
     shouldFailParsingInteger,
     shouldParseFloat,
     shouldParseArray,
+    shouldParseKey,
     shouldFailParsingFloat,
     shouldParseBool,
     shouldFailParsingBool,
     shouldParseString,
     shouldFailParsingString,
     shouldFailParsingArray,
+    shouldFailParsingKey,
+    shouldFailParsingTableHeader,
+    shouldFailParsingTableHeaderArray,
+    shouldParseTableHeader,
+    shouldParseTableHeaderArray,
     day1,
     timeOfDay1,
     timeOfDay2,
@@ -39,7 +45,7 @@ where
 import Data.Text (Text)
 import qualified Data.Time.Calendar.OrdinalDate as T
 import qualified Data.Time.LocalTime as T
-import TOML.Class (Value (..))
+import TOML.Class (Key (..), Value (..))
 import qualified TOML.Parser
 import Test.Tasty.HUnit
 import Text.Megaparsec (TraversableStream)
@@ -51,7 +57,7 @@ shouldParseDate :: Text -> Value -> Assertion
 shouldParseDate s expected = Megaparsec.parse TOML.Parser.dateTimeP "" s `shouldParse` expected
 
 shouldParseInteger :: Text -> Integer -> Assertion
-shouldParseInteger s expected = Megaparsec.parse TOML.Parser.integerP "" s `shouldParse` (Integer expected)
+shouldParseInteger s expected = Megaparsec.parse TOML.Parser.integerP "" s `shouldParse` Integer expected
 
 shouldParseFloat :: Text -> Double -> Assertion
 shouldParseFloat s expected = do
@@ -59,25 +65,40 @@ shouldParseFloat s expected = do
   fmap DoubleNaN d `shouldParse` DoubleNaN expected
 
 shouldParseBool :: Text -> Bool -> Assertion
-shouldParseBool s expected = Megaparsec.parse TOML.Parser.boolP "" s `shouldParse` (Bool expected)
+shouldParseBool s expected = Megaparsec.parse TOML.Parser.boolP "" s `shouldParse` Bool expected
 
 shouldParseString :: Text -> Text -> Assertion
-shouldParseString s expected = Megaparsec.parse TOML.Parser.stringP "" s `shouldParse` (String expected)
+shouldParseString s expected = Megaparsec.parse TOML.Parser.stringP "" s `shouldParse` String expected
 
 shouldParseArray :: Text -> [Value] -> Assertion
-shouldParseArray s expected = Megaparsec.parse TOML.Parser.arrayP "" s `shouldParse` (Array expected)
+shouldParseArray s expected = Megaparsec.parse TOML.Parser.arrayP "" s `shouldParse` Array expected
+
+shouldParseKey :: Text -> Key -> Assertion
+shouldParseKey s expected = Megaparsec.parse TOML.Parser.keyP "" s `shouldParse` expected
+
+shouldParseTableHeader :: Text -> Key -> Assertion
+shouldParseTableHeader s expected = Megaparsec.parse TOML.Parser.tableHeaderP "" s `shouldParse` expected
+
+shouldParseTableHeaderArray :: Text -> Key -> Assertion
+shouldParseTableHeaderArray s expected = Megaparsec.parse TOML.Parser.tableHeaderArrayP "" s `shouldParse` expected
 
 shouldFailParsingInteger,
   shouldFailParsingFloat,
   shouldFailParsingBool,
   shouldFailParsingString,
-  shouldFailParsingArray ::
+  shouldFailParsingArray,
+  shouldFailParsingKey,
+  shouldFailParsingTableHeader,
+  shouldFailParsingTableHeaderArray ::
     Text -> Assertion
 shouldFailParsingString s = Megaparsec.parse (TOML.Parser.stringP *> Megaparsec.eof) "" `shouldFailOn` s
-shouldFailParsingInteger s = Megaparsec.parse TOML.Parser.integerP "" `shouldFailOn` s
-shouldFailParsingFloat s = Megaparsec.parse TOML.Parser.floatP "" `shouldFailOn` s
-shouldFailParsingBool s = Megaparsec.parse TOML.Parser.boolP "" `shouldFailOn` s
-shouldFailParsingArray s = Megaparsec.parse TOML.Parser.arrayP "" `shouldFailOn` s
+shouldFailParsingInteger s = Megaparsec.parse (TOML.Parser.integerP *> Megaparsec.eof) "" `shouldFailOn` s
+shouldFailParsingFloat s = Megaparsec.parse (TOML.Parser.floatP *> Megaparsec.eof) "" `shouldFailOn` s
+shouldFailParsingBool s = Megaparsec.parse (TOML.Parser.boolP *> Megaparsec.eof) "" `shouldFailOn` s
+shouldFailParsingArray s = Megaparsec.parse (TOML.Parser.arrayP *> Megaparsec.eof) "" `shouldFailOn` s
+shouldFailParsingKey s = Megaparsec.parse (TOML.Parser.keyP *> Megaparsec.eof) "" `shouldFailOn` s
+shouldFailParsingTableHeader s = Megaparsec.parse (TOML.Parser.tableHeaderP *> Megaparsec.eof) "" `shouldFailOn` s
+shouldFailParsingTableHeaderArray s = Megaparsec.parse (TOML.Parser.tableHeaderArrayP *> Megaparsec.eof) "" `shouldFailOn` s
 
 shouldParse ::
   ( ShowErrorComponent e,
