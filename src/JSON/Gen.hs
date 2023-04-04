@@ -44,12 +44,13 @@ jNumberGen = JNumber <$> scientificGen
 jsonStringGen :: Range Int -> Gen Text
 jsonStringGen listSize =
   Text.concat
-    <$> ( Gen.list listSize $
-            Gen.frequency
-              [ (9, Text.singleton <$> Gen.unicode),
-                (1, escapedUnicodeGen)
-              ]
-        )
+    <$> Gen.list
+      listSize
+      ( Gen.frequency
+          [ (9, Text.singleton <$> Gen.unicode),
+            (1, escapedUnicodeGen)
+          ]
+      )
   where
     escapedUnicodeGen :: Gen Text
     escapedUnicodeGen = do

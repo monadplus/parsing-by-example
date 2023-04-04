@@ -5,3 +5,4 @@ module TOML
 where
 
 import TOML.Class (Value (..))
+import TOML.Parser (parse)

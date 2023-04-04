@@ -3,7 +3,7 @@
 module Test.TOML.Key (tests) where
 
 import Data.List.NonEmpty (NonEmpty (..))
-import TOML.Class (Key (..), KeyComponent (..))
+import TOML.Class (Key (..))
 import Test.TOML.Common (shouldFailParsingKey, shouldFailParsingTableHeader, shouldFailParsingTableHeaderArray, shouldParseKey, shouldParseTableHeader, shouldParseTableHeaderArray)
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -29,7 +29,7 @@ tests =
       testCase "parse dotted keys" $ do
         shouldParseKey "physical.color" "physical.color"
         shouldParseKey "3.14159" "3.14159"
-        shouldParseKey "site.\"google.com\"" (Key $ KeyComponent "site" :| [KeyComponent "google.com"]),
+        shouldParseKey "site.\"google.com\"" (Key $ "site" :| ["google.com"]),
       testCase "ignore whitespaces around dots in dotted keys" $ do
         shouldParseKey "fruit.name" "fruit.name"
         shouldParseKey "fruit. color" "fruit.color"

@@ -14,7 +14,7 @@ category:            Experimental
 build-type:          Simple
 extra-doc-files:     README.md
 extra-source-files:  README.md
-tested-with:         GHC == 9.4.4
+tested-with:         GHC == 9.2.7, GHC == 9.4.4
 
 source-repository head
   type:                git
@@ -22,7 +22,7 @@ source-repository head
 
 Common common-options
   default-language:    Haskell2010
-  build-depends:       base ^>=4.17
+  build-depends:       base ^>=4.16
   ghc-options:         -Wall
                        -Wcompat
                        -Widentities
@@ -88,14 +88,17 @@ Library
   other-modules: Pretty
 
   build-depends:      Earley ^>= 0.13,
+                      hashable ^>= 1.4,
                       hedgehog ^>= 1.1,
                       megaparsec ^>= 9.2,
+                      mtl ^>= 2.2,
                       parser-combinators ^>= 1.3,
                       prettyprinter ^>= 1.7,
                       prettyprinter-ansi-terminal ^>= 1.1,
                       scientific ^>= 0.3,
                       text ^>=2.0,
                       time ^>= 1.12,
+                      trie-simple ^>= 0.4,
                       unordered-containers ^>= 0.2,
 
 Test-suite tasty
@@ -124,11 +127,3 @@ Test-suite tasty
                         tasty-hunit ^>= 0.10,
                         text ^>=2.0,
                         time ^>= 1.12,
-
--- FIXME: https://github.com/sol/doctest/issues/327
--- Test-suite doctest
---   import:              common-options
---   type:                exitcode-stdio-1.0
---   hs-source-dirs:      doctest
---   main-is:             Main.hs
---   build-depends:       doctest  >=0.20 && <0.21

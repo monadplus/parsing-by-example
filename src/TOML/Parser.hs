@@ -2,6 +2,7 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# HLINT ignore "Redundant lambda" #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
@@ -19,6 +20,7 @@ module TOML.Parser
     keyValueP,
     tomlAstP,
     tomlP,
+    parse,
   )
 where
 
@@ -28,17 +30,18 @@ import qualified Control.Monad.Combinators.NonEmpty as Combinators.NonEmpty
 import qualified Data.Char as Char
 import Data.Fixed
 import Data.Functor (($>))
-import Data.List.NonEmpty (NonEmpty)
+import Data.List.NonEmpty (NonEmpty ((:|)))
 import Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.Read as Read
 import qualified Data.Time as Time
 import Data.Void (Void)
-import TOML.Class (IValue (..), Key (..), KeyComponent (..), Table (..), TomlAst (..), Value (..))
+import TOML.Class (IValue (..), Key (..), Path (..), Table (..), TomlAst (..), Value (..))
 import Text.Megaparsec ((<?>))
 import qualified Text.Megaparsec as Megaparsec
 import qualified Text.Megaparsec.Char as Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as Lexer
+import Text.Megaparsec.Error (ParseErrorBundle (..))
 
 type Parser = Megaparsec.Parsec Void Text
 
@@ -335,7 +338,7 @@ keyP = Key <$> Combinators.NonEmpty.sepBy1 keyComponentP (Megaparsec.Char.char '
   where
     bareKeyP = lexeme $ Megaparsec.takeWhile1P Nothing (\c -> Char.isAlphaNum c || c == '-' || c == '_')
 
-    keyComponentP = KeyComponent <$> (bareKeyP <|> basicStringP <|> literalStringP)
+    keyComponentP = Path <$> (bareKeyP <|> basicStringP <|> literalStringP)
 
 tableHeaderP :: Parser Key
 tableHeaderP = lexeme $ Combinators.between (symbol "[") (symbol "]") keyP
@@ -384,3 +387,12 @@ tomlAstP =
 
 tomlP :: Parser [TomlAst]
 tomlP = space *> Combinators.many tomlAstP <* Megaparsec.eof
+
+parse :: String -> Text -> Either String [TomlAst]
+parse sourceName inputText =
+  case Megaparsec.parse tomlP sourceName inputText of
+    Left ParseErrorBundle {..} -> do
+      let bundleError :| _ = bundleErrors
+      Left (Megaparsec.parseErrorPretty bundleError)
+    Right nodes -> do
+      return nodes
