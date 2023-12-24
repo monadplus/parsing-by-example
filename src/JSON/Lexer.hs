@@ -85,6 +85,8 @@ string = lexeme $ do
             fail "invalid unicode"
 
   let escaped =
+        -- In order to parse a escape character e.g. \"
+        -- we need to input to the compiler the "escaped C version" i.e. \\ \"
         Combinators.choice
           [ "\"" <$ "\\\"",
             "\\" <$ "\\\\",
